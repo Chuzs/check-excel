@@ -58,7 +58,7 @@
 import { ref, reactive } from 'vue'
 import XLSX from 'xlsx'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { BRAND_NAME, PATTERN } from '../share/contant'
+import { BRAND_NAME, PATTERN } from '../share/constant'
 const formItemLayout = {
   labelCol: { span: 4 },
   wrapperCol: { span: 14 }
