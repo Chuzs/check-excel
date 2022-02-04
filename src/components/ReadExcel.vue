@@ -46,7 +46,14 @@
   </a-form>
   <div style="margin-top: 16px">
     <a-textarea
-    :value="JSON.stringify(result)"
+    :value="JSON.stringify(successData)"
+    :auto-size="{ minRows: 2, maxRows: 50 }"
+    >
+    </a-textarea>
+  </div>
+  <div style="margin-top: 16px">
+    <a-textarea
+    :value="JSON.stringify(failedData)"
     :auto-size="{ minRows: 2, maxRows: 50 }"
     >
     </a-textarea>
@@ -63,9 +70,8 @@ const formItemLayout = {
   labelCol: { span: 4 },
   wrapperCol: { span: 14 }
 }
-const totalData = ref([])
-const uncheckedExcelData = ref([])
-const result = ref([])
+const successData = ref([])
+const failedData = ref([])
 const uploading = ref(false)
 const formState = reactive({
   totalDataFileList: [],
@@ -90,7 +96,7 @@ const parseTotalExcel = async (file) => {
   const data = await file.arrayBuffer()
   const workbook = XLSX.read(data)
   const sheetName = '2022价格'
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: ['itemNuber', 'size', 'pattern', 'size1', 'forUnitPrice', 'DDPWithoutFreightUnitPrice', 'unitWeight'] })
 }
 const parseUncheckedExcel = async (file) => {
   const fileArrayBuffer = await file.arrayBuffer()
@@ -114,36 +120,37 @@ const parseUncheckedExcel = async (file) => {
   return result
 }
 const getArrayDataBySheetName = (workbook, sheetName) => {
-  XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME)
+  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME)
 }
 const handleUpload = async () => {
-  totalData.value = await parseTotalExcel(formState.totalDataFileList[0])
-  uncheckedExcelData.value = await parseUncheckedExcel(formState.uncheckedDataFileList[0])
-  const uncheckedData = uncheckedExcelData.value.filter((item) => item[2] === BRAND_NAME)
-  const sizeList = []
-  uncheckedData.forEach(item => {
-    sizeList.push(item[3].split(' ')[0])
-  })
-  const successData = []
-  const failedData = []
+  const totalData = await parseTotalExcel(formState.totalDataFileList[0])
+  const uncheckedData = await parseUncheckedExcel(formState.uncheckedDataFileList[0])
+  successData.value = []
+  failedData.value = []
   for (const item of uncheckedData) {
     let flag = true
-    for (const elem of totalData.value) {
-      if (item[3].split(' ')[0] === elem[1] && PATTERN[item[6]]) {
+    for (const elem of totalData) {
+      if (item.size === elem.size && item.pattern === elem.pattern) {
         flag = false
-        if (item[8] === elem[1] && item[9] === elem[2]) {
-          successData.push(item)
+        if (isEqual(item, elem)) {
+          successData.value.push(item)
         } else {
-          failedData.push(item)
+          console.log(elem)
+          console.log(item)
+          failedData.value.push(item)
         }
       }
     }
     if (flag) {
-      failedData.push(item)
+      console.log(item)
+      failedData.value.push(item)
     }
   }
-
-  result.value = sizeList
+}
+const isEqual = (a, b) => {
+  return a.forUnitPrice === b.forUnitPrice &&
+   a.DDPWithoutFreightUnitPrice === b.DDPWithoutFreightUnitPrice &&
+   a.unitWeight === b.unitWeight
 }
 </script>
 
