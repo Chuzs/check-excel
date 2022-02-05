@@ -86,12 +86,7 @@ const beforeUncheckedDataUpload = file => {
   formState.uncheckedDataFileList = [file]
   return false
 }
-// const parseExcel = async (file) => {
-//   const data = await file.arrayBuffer()
-//   const workbook = XLSX.read(data)
-//   const firstSheetName = workbook.SheetNames[0]
-//   return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1 })
-// }
+
 const parseTotalExcel = async (file) => {
   const data = await file.arrayBuffer()
   const workbook = XLSX.read(data)
@@ -130,7 +125,7 @@ const handleUpload = async () => {
   for (const item of uncheckedData) {
     let flag = true
     for (const elem of totalData) {
-      if (item.size === elem.size && item.pattern === elem.pattern) {
+      if (item.size.trim().toUpperCase() === elem.size.trim().toUpperCase() && item.pattern.trim().toUpperCase() === elem.pattern.trim().toUpperCase()) {
         flag = false
         if (isEqual(item, elem)) {
           successData.value.push(item)
