@@ -7,9 +7,12 @@
     "serve": "vite preview"
   },
   "dependencies": {
-    "ant-design-vue": "^2.2.8",
+    "ant-design-vue": "^3.0.0-beta.9",
     "exceljs": "^4.3.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^2.12.313",
     "vue": "^3.0.5",
+    "vue-router": "^4.0.12",
     "xlsx": "^0.17.5"
   },
   "devDependencies": {

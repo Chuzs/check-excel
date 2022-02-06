@@ -43,21 +43,21 @@
         开始核对
       </a-button>
     </a-form-item>
-  </a-form>
-  <div style="margin-top: 16px">
-    <a-textarea
-    :value="JSON.stringify(successData)"
-    :auto-size="{ minRows: 2, maxRows: 50 }"
-    >
-    </a-textarea>
-  </div>
-  <div style="margin-top: 16px">
-    <a-textarea
+    <a-form-item label="错误数据" >
+      <a-textarea
     :value="JSON.stringify(failedData)"
     :auto-size="{ minRows: 2, maxRows: 50 }"
     >
     </a-textarea>
-  </div>
+    </a-form-item>
+    <a-form-item label="正确数据" >
+     <a-textarea
+      :value="JSON.stringify(successData)"
+      :auto-size="{ minRows: 2, maxRows: 50 }"
+      >
+      </a-textarea>
+    </a-form-item>
+  </a-form>
   </div>
 </template>
 
@@ -65,17 +65,17 @@
 import { ref, reactive } from 'vue'
 import XLSX from 'xlsx'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { BRAND_NAME, PATTERN } from '../share/constant'
+import { BRAND_NAME } from '../share/constant'
 const formItemLayout = {
   labelCol: { span: 4 },
-  wrapperCol: { span: 14 }
+  wrapperCol: { span: 14 },
 }
 const successData = ref([])
 const failedData = ref([])
 const uploading = ref(false)
 const formState = reactive({
   totalDataFileList: [],
-  uncheckedDataFileList: []
+  uncheckedDataFileList: [],
 })
 
 const beforeTotalDataUpload = file => {
@@ -91,7 +91,7 @@ const parseTotalExcel = async (file) => {
   const data = await file.arrayBuffer()
   const workbook = XLSX.read(data)
   const sheetName = '2022价格'
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: ['itemNuber', 'size', 'pattern', 'size1', 'forUnitPrice', 'DDPWithoutFreightUnitPrice', 'unitWeight'] })
+  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: ['number', 'size', 'pattern', 'fob', 'ddp', 'weight'] })
 }
 const parseUncheckedExcel = async (file) => {
   const fileArrayBuffer = await file.arrayBuffer()
@@ -103,10 +103,10 @@ const parseUncheckedExcel = async (file) => {
     for (let i = 0; i < firstSheetData.length; i++) {
       result.push({
         size: firstSheetData[i][3].split(' ')[0],
-        pattern: PATTERN[firstSheetData[i][6]],
-        forUnitPrice: firstSheetData[i][8],
-        DDPWithoutFreightUnitPrice: firstSheetData[i][9],
-        unitWeight: secondSheetData[i][8]
+        pattern: firstSheetData[i][6],
+        fob: firstSheetData[i][8],
+        ddp: firstSheetData[i][9],
+        weight: secondSheetData[i][8],
       })
     }
   } else {
@@ -143,9 +143,9 @@ const handleUpload = async () => {
   }
 }
 const isEqual = (a, b) => {
-  return a.forUnitPrice === b.forUnitPrice &&
-   a.DDPWithoutFreightUnitPrice === b.DDPWithoutFreightUnitPrice &&
-   a.unitWeight === b.unitWeight
+  return a.fob === b.fob &&
+   a.ddp === b.ddp &&
+   a.weight === b.weight
 }
 </script>
 
