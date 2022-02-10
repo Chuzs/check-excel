@@ -20,13 +20,13 @@
 </template>
 <script setup>
 import { PieChartOutlined } from '@ant-design/icons-vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const menuList = [
   {
-    key: '1',
+    key: '/',
     name: 'checkUnitPrice',
     title: '核对单价重量',
     path: '/',
@@ -37,12 +37,22 @@ const menuList = [
     title: '过滤订单号',
     path: '/filterOrder',
   },
+  {
+    key: '/checkPdf',
+    name: 'checkPdf',
+    title: '核对PDF',
+    path: '/checkPdf',
+  },
 ]
 
-const selectedKeys = ref(['1'])
+const selectedKeys = ref(['/'])
+console.log(router.currentRoute.value)
 const handleClick = (menu) => {
   router.push(menu.item.path)
 }
+onMounted(() => {
+  selectedKeys.value = [router.currentRoute.value.fullPath]
+})
 </script>
 <style>
 .logo {

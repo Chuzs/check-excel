@@ -10,6 +10,7 @@
               :multiple="false"
               :before-upload="beforeTotalDataUpload"
               @change="handleTotalChange"
+              accept=".xlsx,.xls"
             >
               <a-button>
                 <UploadOutlined />
@@ -24,6 +25,7 @@
               :multiple="false"
               :before-upload="beforeUncheckedDataUpload"
               @change="handleUncheckedChange"
+              accept=".xlsx,.xls"
             >
               <a-button>
                 <UploadOutlined />
@@ -52,8 +54,17 @@
       </a-form>
     </div>
     <div class="container" style="margin-top: 20px">
-      <a-table rowKey="size" :columns="columns" :data-source="[...toRaw(failedData), ...toRaw(successData)]" bordered size="small" >
-        <template #bodyCell="{ column, record }">
+      <a-table rowKey="size" :columns="columns"
+      :data-source="[...toRaw(failedData).sort((a,b)=>a.pattern), ...toRaw(successData)]" bordered size="small"
+      :pagination="{
+        pageSize: 25
+      }">
+        <template #bodyCell="{ column,text, record, index }">
+          <template v-if="column.key === 'index'">
+            <span>
+              {{index+1}}
+            </span>
+          </template>
           <template v-if="column.key === 'status'">
             <span>
               <a-tag :color="record.status === 1 ? 'volcano' : 'green'">
@@ -61,7 +72,13 @@
               </a-tag>
             </span>
           </template>
+          <template v-if="['size','pattern'].includes(column.key)">
+            <span :style="{backgroundColor: repeatList.includes(record.size+record.pattern) ? 'yellow' : ''}">
+              {{ text }}
+            </span>
+          </template>
         </template>
+        <template #title>总条数：{{ successData.length + failedData.length }}，正确条数：{{ successData.length }}，错误条数：{{ failedData.length }}</template>
       </a-table>
     </div>
   </div>
@@ -73,10 +90,16 @@ import XLSX from 'xlsx'
 import { UploadOutlined } from '@ant-design/icons-vue'
 import { BRAND_NAME } from '../share/constant'
 import { totalData as totalExcelData } from '../data/totalData.js'
-import { Form } from 'ant-design-vue'
+import { Form, message } from 'ant-design-vue'
 
 const useForm = Form.useForm
 const columns = [
+  {
+    title: 'index',
+    dataIndex: 'index',
+    key: 'index',
+    align: 'center',
+  },
   {
     title: 'pcr',
     dataIndex: 'pcr',
@@ -148,6 +171,7 @@ const columns = [
 ]
 const successData = ref([])
 const failedData = ref([])
+const repeatList = ref([])
 const modelRef = reactive({
   totalDataFileList: [],
   uncheckedDataFileList: [],
@@ -185,17 +209,18 @@ const parseUncheckedExcel = async (file) => {
   if (firstSheetData.length === secondSheetData.length) {
     for (let i = 0; i < firstSheetData.length; i++) {
       result.push({
-        size: firstSheetData[i][3].split(' ')[0] === secondSheetData[i][3].split(' ')[0] ? secondSheetData[i][3].split(' ')[0] : firstSheetData[i][3].split(' ')[0] + secondSheetData[i][3].split(' ')[0],
-        pattern: firstSheetData[i][6] === secondSheetData[i][6] ? secondSheetData[i][6] : firstSheetData[i][6] + secondSheetData[i][6],
+        size: firstSheetData[i][3].split(' ')[0] === secondSheetData[i][3].split(' ')[0] ? secondSheetData[i][3].split(' ')[0] : firstSheetData[i][3].split(' ')[0] + '_' + secondSheetData[i][3].split(' ')[0],
+        pattern: firstSheetData[i][6] === secondSheetData[i][6] ? secondSheetData[i][6] : firstSheetData[i][6] + '_' + secondSheetData[i][6],
         fob: firstSheetData[i][8],
         ddp: firstSheetData[i][9],
         weight: secondSheetData[i][8],
-        pr: firstSheetData[i][5] === secondSheetData[i][5] ? secondSheetData[i][5] : firstSheetData[i][5] + secondSheetData[i][5],
-        pcr: firstSheetData[i][1] === secondSheetData[i][1] ? secondSheetData[i][1] : firstSheetData[i][1] + secondSheetData[i][1],
+        pr: firstSheetData[i][5] === secondSheetData[i][5] ? secondSheetData[i][5] : firstSheetData[i][5] + '_' + secondSheetData[i][5],
+        pcr: firstSheetData[i][1] === secondSheetData[i][1] ? secondSheetData[i][1] : firstSheetData[i][1] + '_' + secondSheetData[i][1],
       })
     }
   } else {
-    console.log('')
+    console.log('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
+    message.warning('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
   }
   return result
 }
@@ -207,7 +232,17 @@ const handleCheck = () => {
     if (modelRef.totalDataFileList[0]) {
       totalData = await parseTotalExcel(modelRef.totalDataFileList[0].originFileObj)
     }
+    console.log(totalData)
     const uncheckedData = await parseUncheckedExcel(modelRef.uncheckedDataFileList[0].originFileObj)
+    const sizeList = []
+    repeatList.value = []
+    uncheckedData.forEach((item)=>{
+      if (sizeList.includes(item.size + item.pattern)) {
+        repeatList.value.push(item.size + item.pattern)
+      } else{
+        sizeList.push(item.size+item.pattern)
+      }
+    })
     successData.value = []
     failedData.value = []
     for (const item of uncheckedData) {
@@ -220,13 +255,13 @@ const handleCheck = () => {
           } else {
             console.log(elem)
             console.log(item)
-            failedData.value.push({ ...item, status: 1 })
+            failedData.value.push({ ...getErrData(item, elem), status: 1 })
           }
         }
       }
       if (flag) {
         console.log(item)
-        failedData.value.push({ ...item, status: 1 })
+        failedData.value.push({ ...item, status: 1})
       }
     }
   }).catch(err => {
@@ -253,6 +288,25 @@ const isEqual = (a, b) => {
    a.weight === b.weight &&
    a.pr === b.pr &&
    a.pcr === b.pcr
+}
+const getErrData=(a, b)=>{
+  const err = {...a}
+  if (a.fob !== b.fob) {
+    err.fob = '预报关：'+a.fob+' -- '+'2022价格表：'+b.fob
+  }
+  if (a.ddp !== b.ddp) {
+    err.ddp = '预报关：'+a.ddp+' -- '+'2022价格表：'+b.ddp
+  }
+  if (a.weight !== b.weight) {
+    err.weight = '预报关：'+a.weight+' -- '+'2022价格表：'+b.weight
+  }
+  if (a.pr !== b.pr) {
+    err.pr = '预报关：'+a.pr+' -- '+'2022价格表：'+b.pr
+  }
+  if (a.pcr !== b.pcr) {
+    err.pcr = '预报关：'+a.pcr+' -- '+'2022价格表：'+b.pcr
+  }
+  return err
 }
 </script>
 
