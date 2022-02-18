@@ -294,6 +294,7 @@ const successData = ref([])
 const failedData = ref([])
 const successPages = ref([])
 const failedPages = ref([])
+const brand = ref('')
 const orderInfoSuccess = ref(true)
 const modelRef = reactive({
   totalDataFileList: [],
@@ -346,12 +347,15 @@ const getPageDataFunction = async (pdfDocument) => {
   const strArr = strings.filter(item => item.trim() !== '')
   for (let i = 0; i < strArr.length; i++) {
     if (strArr[i].indexOf('KKM0KPPPPLLNO') > -1) {
+      brand.value = 'suzuyo'
       return getSuzuyoPageData
     }
     if (strArr[i].indexOf('1100800792910') > -1) {
+      brand.value = 'draft'
       return getDraftPageData
     }
     if (strArr[i].indexOf('0215564001841') > -1) {
+      brand.value = 'yifan'
       return getYifanPageData
     }
   }
@@ -423,9 +427,13 @@ const getDraftPageData = async (pdfDocument, page) => {
       uncheckedOrderInfo.vessel = strArr[i + 2] + ' ' + strArr[i + 3]
       uncheckedOrderInfo.vesselDate = moment(strArr[i + 4], 'DD-MM-YYYY').subtract(543, 'years')
     }
-    if (strArr[i].indexOf('Already Checked') > -1) {
-      uncheckedOrderInfo.country = strArr[i + 2].replace(' ', '') + strArr[i + 3]
-      uncheckedOrderInfo.destination = strArr[i + 4].replace(' ', '') + strArr[i + 5]
+    if (strArr[i].indexOf('ทางเรือ')>-1) {
+      uncheckedOrderInfo.vessel = strArr[i - 3] + ' ' + strArr[i - 2]
+      uncheckedOrderInfo.vesselDate = moment(strArr[i - 1], 'DD-MM-YYYY').subtract(543, 'years')
+    }
+    if (strArr[i].indexOf('1.00 USD =') > -1 && page ===1) {
+      uncheckedOrderInfo.country = strArr[i - 4].replace(' ', '') + strArr[i - 3]
+      uncheckedOrderInfo.destination = strArr[i - 2].replace(' ', '') + strArr[i - 1]
     }
     if (page === 1 && strArr[i].trim() === 'PASSENGER CAR RADIAL') {
       tmp.pcr = strArr[i + 1]
@@ -484,9 +492,12 @@ const getYifanPageData = async (pdfDocument, page) => {
     }
     if (strArr[i].trim() === 'MADE IN THAILAND') {
       tmp.weight = parseFloat(strArr[i + 4].split(' ')[0].replace(',', ''))
-      tmp.quantity = parseInt(strArr[i + 1])
-      tmp.quantity = tmp.quantity === parseInt(strArr[i + 5].split(' ')[0]) ? tmp.quantity : tmp.quantity + '_' + parseInt(strArr[i + 5].split(' ')[0])
+      tmp.quantity = parseInt(strArr[i + 1].replace(',', ''))
+      if (page === 1) {
+        // tmp.quantity = tmp.quantity === parseInt(strArr[i + 5].split(' ')[0].replace(',', '')) ? tmp.quantity : tmp.quantity + '_' + parseInt(strArr[i + 5].split(' ')[0].replace(',', ''))
+      } 
       if (page !== 1) {
+        // tmp.quantity = tmp.quantity === parseInt(strArr[i + 8].split(' ')[0].replace(',', '')) ? tmp.quantity : tmp.quantity + '_' + parseInt(strArr[i + 8].split(' ')[0].replace(',', ''))
         tmp.fob = parseFloat(strArr[i + 7].split(' ')[1].replace(',', ''))
       }
     }
@@ -547,13 +558,16 @@ const parseTotalPagesInfo = (totalData) => {
     if (numList.includes(i + 1)) {
       totalPagesInfo.push({
         totalNw: parseFloat(parseFloat(totalNw).toFixed(2)),
+        totalGw: parseFloat(parseFloat(totalNw).toFixed(2)),
         totalFob: parseFloat(parseFloat(totalFob).toFixed(2)),
         totalQty: parseFloat(parseFloat(totalQty).toFixed(2)),
       })
     }
   }
-  for (const item of totalPagesInfo) {
-    item.totalGw = parseFloat(parseFloat(totalNw).toFixed(2))
+  if (brand.value !== 'yifan') {
+    for (const item of totalPagesInfo) {
+      item.totalGw = parseFloat(parseFloat(totalNw).toFixed(2))
+    }
   }
 }
 const parseTotalOrderInfo = (secondSheetOtherData) => {
