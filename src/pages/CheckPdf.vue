@@ -113,7 +113,7 @@ import { ref, reactive, toRaw } from 'vue'
 import XLSX from 'xlsx'
 import moment from 'moment'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { BRAND_NAME } from '../share/constant'
+import { BRAND_NAME_LIST,BRAND_NAME_BY,BRAND_NAME_NA,BRAND_NAME_VR,BRAND_NAME_GP } from '../share/constant'
 import { Form } from 'ant-design-vue'
 import * as PDFJs from 'pdfjs-dist'
 
@@ -376,15 +376,25 @@ const getSuzuyoPageData = async (pdfDocument, page) => {
       uncheckedOrderInfo.invDate = moment(arr[4], 'DD-MM-YYYY')
     }
     if (strArr[i].indexOf('KKM0KPPPPLLNO') > -1) {
-      uncheckedOrderInfo.vessel = strArr[i + 2]
+      uncheckedOrderInfo.vessel = strArr[i + 2].trim()
       uncheckedOrderInfo.vesselDate = moment(strArr[i + 3], 'DD-MM-YYYY').subtract(543, 'years')
       uncheckedOrderInfo.country = strArr[i + 9].split(' ')[1] + strArr[i + 9].split(' ')[2] + strArr[i + 10].split(' ')[0]
-      uncheckedOrderInfo.destination = strArr[i + 11].split(' ')[0] + strArr[i + 11].split(' ')[1] + strArr[i + 12]
+      // uncheckedOrderInfo.destination = strArr[i + 11].split(' ')[0] + strArr[i + 11].split(' ')[1] + strArr[i + 12]
+      uncheckedOrderInfo.destination = strArr[i + 10].split(' ')[1] + strArr[i + 10].split(' ')[2] + strArr[i + 11]
+    }
+    if (strArr[i].indexOf('สทบ.') > -1) {
+      uncheckedOrderInfo.country = strArr[i + 1].split(' ')[1] + praseStrEmpty(strArr[i + 1].split(' ')[2]) + strArr[i + 2].split(' ')[0]
+      uncheckedOrderInfo.destination = strArr[i + 2].split(' ')[1] + praseStrEmpty(strArr[i + 2].split(' ')[2]) + strArr[i + 3]
     }
     if (strArr[i].trim() === 'MADE IN THAILAND') {
       tmp.quantity = parseInt(strArr[i + 1])
     }
     if (strArr[i].trim() === 'PASSENGER CAR RADIAL') {
+      tmp.pcr = strArr[i + 1]
+      tmp.weight = parseFloat(strArr[i + 3].split(' ')[0].replace(',', ''))
+      tmp.quantity = tmp.quantity === parseInt(strArr[i + 4].split(' ')[0]) ? tmp.quantity : tmp.quantity + '_' + parseInt(strArr[i + 4].split(' ')[0])
+    }
+    if (strArr[i].trim() === 'TRUCK BUS RADIAL TYRE') {
       tmp.pcr = strArr[i + 1]
       tmp.weight = parseFloat(strArr[i + 3].split(' ')[0].replace(',', ''))
       tmp.quantity = tmp.quantity === parseInt(strArr[i + 4].split(' ')[0]) ? tmp.quantity : tmp.quantity + '_' + parseInt(strArr[i + 4].split(' ')[0])
@@ -525,24 +535,15 @@ const parseTotalExcel = async (file) => {
   const fileArrayBuffer = await file.arrayBuffer()
   const workbook = XLSX.read(fileArrayBuffer)
   const firstSheetData = getArrayDataBySheetName(workbook, workbook.SheetNames[0])
+  console.log(firstSheetData)
   const secondSheetData = getArrayDataBySheetName(workbook, workbook.SheetNames[1])
+  console.log(secondSheetData)
   const secondSheetOtherData = getOtherDataBySheetName(workbook, workbook.SheetNames[1])
   console.log(secondSheetOtherData)
   parseTotalOrderInfo(secondSheetOtherData)
   console.log(totalOrderInfo)
-  totalData = []
-  if (firstSheetData.length === secondSheetData.length) {
-    for (let i = 0; i < firstSheetData.length; i++) {
-      totalData.push({
-        fob: parseFloat(parseFloat(firstSheetData[i][10]).toFixed(2)),
-        weight: parseFloat(parseFloat(secondSheetData[i][9]).toFixed(2)),
-        pcr: firstSheetData[i][1] === secondSheetData[i][1] ? secondSheetData[i][1] : firstSheetData[i][1] + secondSheetData[i][1],
-        quantity: firstSheetData[i][7] === secondSheetData[i][7] ? secondSheetData[i][7] : firstSheetData[i][7] + secondSheetData[i][7],
-      })
-    }
-  } else {
-    console.log('')
-  }
+  parseTotalData(firstSheetData,secondSheetData)
+  console.log(totalData)
   parseTotalPagesInfo(totalData)
   console.log(totalPagesInfo)
 }
@@ -571,24 +572,90 @@ const parseTotalPagesInfo = (totalData) => {
   }
 }
 const parseTotalOrderInfo = (secondSheetOtherData) => {
-  totalOrderInfo.invNo = secondSheetOtherData[4][0].split(' ')[3]
-  totalOrderInfo.invDate = moment(secondSheetOtherData[5][9].split(':')[1].trim(), 'MMM D YYYY')
-  totalOrderInfo.vessel = secondSheetOtherData[12][0].split(':')[1]
-  totalOrderInfo.vesselDate = moment(secondSheetOtherData[11][9].split(':')[1].trim(), 'MMM D YYYY')
+  let invNoIndex = 4
+  let invDateIndex = 5
+  let vesselIndex = 12
+  let vesselDateIndex = 11
+  switch (brandName.value) {
+    case BRAND_NAME_NA:
+      invNoIndex = 3
+      invDateIndex = 4
+      vesselIndex = 11
+      vesselDateIndex = 10
+      break
+    case BRAND_NAME_BY:
+    case BRAND_NAME_VR:
+      invNoIndex = 3
+      invDateIndex = 4
+      vesselIndex = 10
+      vesselDateIndex = 9
+      break
+    case BRAND_NAME_GP:
+      break
+    default:
+      break;
+  }
+  totalOrderInfo.invNo = secondSheetOtherData[invNoIndex][secondSheetOtherData[invNoIndex].length-1].split(':')[1].trim()
+  totalOrderInfo.invDate = moment(secondSheetOtherData[invDateIndex][secondSheetOtherData[invDateIndex].length-1].split(':')[1].trim(), 'MMM D YYYY')
+  totalOrderInfo.vessel = secondSheetOtherData[vesselIndex][secondSheetOtherData[vesselIndex].length-1].split(':')[1].trim()
+  totalOrderInfo.vesselDate = moment(secondSheetOtherData[vesselDateIndex][secondSheetOtherData[vesselDateIndex].length-1].split(':')[1].trim(), 'MMM D YYYY')
   totalOrderInfo.country = 'UNITEDSTATESUS'
   totalOrderInfo.destination = 'UNITEDSTATESUS'
 }
+const parseTotalData = (firstSheetData, secondSheetData) => {
+  totalData = []
+  let pcrIndex = 1
+  let weightIndex = 9
+  let quantutyIndex = 7
+  let fobIndex = 10
+  console.log(brandName.value)
+  switch (brandName.value) {
+    case BRAND_NAME_NA:
+      pcrIndex = 2
+      fobIndex = 9
+      break
+    case BRAND_NAME_BY:
+    case BRAND_NAME_VR:
+      fobIndex = 9
+      break
+    case BRAND_NAME_GP:
+      break
+    default:
+      break;
+  }
+  for (let i = 0; i < firstSheetData.length; i++) {
+    totalData.push({
+      fob: parseFloat(parseFloat(firstSheetData[i][fobIndex]).toFixed(2)),
+      weight: parseFloat(parseFloat(secondSheetData[i][weightIndex]).toFixed(2)),
+      pcr: firstSheetData[i][pcrIndex] === secondSheetData[i][pcrIndex] ? secondSheetData[i][pcrIndex] : firstSheetData[i][pcrIndex] + secondSheetData[i][pcrIndex],
+      quantity: firstSheetData[i][quantutyIndex] === secondSheetData[i][quantutyIndex] ? secondSheetData[i][quantutyIndex] : firstSheetData[i][quantutyIndex] + secondSheetData[i][quantutyIndex],
+    })
+  }
+}
+const brandName = ref(BRAND_NAME_GP)
 const getArrayDataBySheetName = (workbook, sheetName) => {
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME)
+  const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => BRAND_NAME_LIST.includes(item[2]) || BRAND_NAME_LIST.includes(item[1]))
+  if (sheetData[0][2] === BRAND_NAME_GP) {
+    brandName.value = BRAND_NAME_GP
+  }
+  if (sheetData[0][2] === BRAND_NAME_VR) {
+    brandName.value = BRAND_NAME_VR
+  }
+  if (sheetData[0][1] === BRAND_NAME_NA) {
+    brandName.value = BRAND_NAME_NA
+  }
+  if (sheetData[0][2] === BRAND_NAME_BY) {
+    brandName.value = BRAND_NAME_BY
+  }
+  return sheetData
 }
 const getOtherDataBySheetName = (workbook, sheetName) => {
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] !== BRAND_NAME).filter(item => item.length > 0)
+  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => !(BRAND_NAME_LIST.includes(item[2]) || BRAND_NAME_LIST.includes(item[1]))).filter(item => item.length > 0)
 }
 const handleCheck = () => {
   validate().then(async () => {
     await parseUncheckedPdf(modelRef.uncheckedDataFileList[0].originFileObj)
     await parseTotalExcel(modelRef.totalDataFileList[0].originFileObj)
-    console.log(totalData)
     checkData()
     checkPagesInfo()
     checkOrderInfo()
@@ -605,7 +672,8 @@ const checkData = () => {
     } else {
       console.log(totalData[i])
       console.log(uncheckedData[i])
-      failedData.value.push({ ...uncheckedData[i], status: 1 })
+      // failedData.value.push({ ...uncheckedData[i], status: 1 })
+      failedData.value.push({ ...getErrData(uncheckedData[i], totalData[i]), status: 1 })
     }
   }
 }
@@ -698,6 +766,28 @@ const isEqualOrder = (a, b) => {
   // a.vessel === b.vessel &&
   // a.vesselDate.diff(b.vesselDate, 'day') >= 0 &&
   // b.invDate.diff(a.invDate, 'day') === 0
+}
+const getErrData =(a, b) => {
+  const err = {...a}
+  if (a.fob !== b.fob) {
+    err.fob = 'pdf：'+a.fob+' -- '+'预报关：'+b.fob
+  }
+  if (a.weight !== b.weight) {
+    err.weight = 'pdf：'+a.weight+' -- '+'预报关：'+b.weight
+  }
+  if (a.quantity !== b.quantity) {
+    err.pr = 'pdf：'+a.pr+' -- '+'预报关：'+b.pr
+  }
+  if (a.pcr !== b.pcr) {
+    err.pcr = 'pdf：'+a.pcr+' -- '+'预报关：'+b.pcr
+  }
+  return err
+}
+const praseStrEmpty= (str) => {
+  if (typeof str === 'undefined' || str === null) {
+        return "";
+    }
+    return str;
 }
 </script>
 

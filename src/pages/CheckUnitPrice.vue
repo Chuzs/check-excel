@@ -88,7 +88,7 @@
 import { ref, reactive, toRaw } from 'vue'
 import XLSX from 'xlsx'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { BRAND_NAME } from '../share/constant'
+import { BRAND_NAME_GP } from '../share/constant'
 import { totalData as totalExcelData } from '../data/totalData.js'
 import { Form, message } from 'ant-design-vue'
 
@@ -225,7 +225,7 @@ const parseUncheckedExcel = async (file) => {
   return result
 }
 const getArrayDataBySheetName = (workbook, sheetName) => {
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME)
+  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME_GP)
 }
 const handleCheck = () => {
   validate().then(async () => {

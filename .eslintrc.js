@@ -19,5 +19,6 @@ module.exports = {
     'vue/no-v-model-argument': 'off',
     'vue/no-v-for-template-key': 'off',
     'comma-dangle': ['error', 'always-multiline'],
+    'no-unused-vars': 'off',
   },
 }
