@@ -1,7 +1,12 @@
 <template>
   <div>
     <div class="logo" />
-    <a-menu v-model:selectedKeys="selectedKeys" theme="dark" mode="inline" @click="handleClick">
+    <a-menu
+      v-model:selectedKeys="selectedKeys"
+      theme="dark"
+      mode="inline"
+      @click="handleClick"
+    >
       <template v-for="item in menuList" :key="item.key">
         <template v-if="!item.children">
           <a-menu-item :key="item.key" :path="item.path">
@@ -34,11 +39,11 @@ const menuList = [
   {
     key: '2',
     name: 'filterOrder',
-    title: '过滤订单号',
+    title: '核减库存',
     path: '/filterOrder',
   },
   {
-    key: '/checkPdf',
+    key: '/3',
     name: 'checkPdf',
     title: '核对PDF',
     path: '/checkPdf',

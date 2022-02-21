@@ -3,82 +3,78 @@
     <div class="container">
       <a-form>
         <a-row type="flex" justify="space-between">
-          <a-form-item name="totalDataFileList" label="总数据" >
+          <a-form-item name="totalDataFileList" label="总数据">
             <a-upload
               v-model:fileList="modelRef.totalDataFileList"
               name="totalDataFile"
               :multiple="false"
               :before-upload="beforeTotalDataUpload"
               @change="handleTotalChange"
-              accept=".xlsx,.xls"
+              accept=".xlsx, .xls"
             >
               <a-button>
-                <UploadOutlined />
-                上传总数据
+                <UploadOutlined />上传总数据
               </a-button>
             </a-upload>
           </a-form-item>
-          <a-form-item v-bind="validateInfos.uncheckedDataFileList" name="uncheckedDataFileList" label="待核对数据">
+          <a-form-item
+            v-bind="validateInfos.uncheckedDataFileList"
+            name="uncheckedDataFileList"
+            label="待核对数据"
+          >
             <a-upload
               v-model:fileList="modelRef.uncheckedDataFileList"
               name="uncheckedDataFile"
               :multiple="false"
               :before-upload="beforeUncheckedDataUpload"
               @change="handleUncheckedChange"
-              accept=".xlsx,.xls"
+              accept=".xlsx, .xls"
             >
               <a-button>
-                <UploadOutlined />
-                上传待核对数据
+                <UploadOutlined />上传待核对数据
               </a-button>
             </a-upload>
           </a-form-item>
           <a-form-item>
             <a-space>
-              <a-button
-                type="primary"
-                @click="handleCheck"
-              >
-                开始核对
-              </a-button>
-              <a-button
-                type="primary"
-                ghost
-                @click="handelReset"
-              >
-                重置
-              </a-button>
+              <a-button type="primary" @click="handleCheck">开始核对</a-button>
+              <a-button type="primary" ghost @click="handelReset">重置</a-button>
             </a-space>
           </a-form-item>
         </a-row>
       </a-form>
     </div>
     <div class="container" style="margin-top: 20px">
-      <a-table rowKey="size" :columns="columns"
-      :data-source="[...toRaw(failedData).sort((a,b)=>a.pattern), ...toRaw(successData)]" bordered size="small"
-      :pagination="{
-        pageSize: 25
-      }">
-        <template #bodyCell="{ column,text, record, index }">
+      <a-table
+        rowKey="size"
+        :columns="columns"
+        :data-source="[...toRaw(failedData).sort((a, b) => a.pattern), ...toRaw(successData)]"
+        bordered
+        size="small"
+        :pagination="{
+          pageSize: 25
+        }"
+      >
+        <template #bodyCell="{ column, text, record, index }">
           <template v-if="column.key === 'index'">
-            <span>
-              {{index+1}}
-            </span>
+            <span>{{ index + 1 }}</span>
           </template>
           <template v-if="column.key === 'status'">
             <span>
-              <a-tag :color="record.status === 1 ? 'volcano' : 'green'">
-                {{ record.status === 1 ? '错误' : '正确' }}
-              </a-tag>
+              <a-tag
+                :color="record.status === 1 ? 'volcano' : 'green'"
+              >{{ record.status === 1 ? '错误' : '正确' }}</a-tag>
             </span>
           </template>
-          <template v-if="['size','pattern'].includes(column.key)">
-            <span :style="{backgroundColor: repeatList.includes(record.size+record.pattern) ? 'yellow' : ''}">
-              {{ text }}
-            </span>
+          <template v-if="['size', 'pattern'].includes(column.key)">
+            <span
+              :style="{ backgroundColor: repeatList.includes(record.size + record.pattern) ? 'yellow' : '' }"
+            >{{ text }}</span>
           </template>
         </template>
-        <template #title>总条数：{{ successData.length + failedData.length }}，正确条数：{{ successData.length }}，错误条数：{{ failedData.length }}</template>
+        <template
+          #title
+        >总条数：{{ successData.length + failedData.length }}，正确条数：{{ successData.length }}，错误条数：{{ failedData.length }}</template>
       </a-table>
     </div>
   </div>
@@ -236,11 +232,11 @@ const handleCheck = () => {
     const uncheckedData = await parseUncheckedExcel(modelRef.uncheckedDataFileList[0].originFileObj)
     const sizeList = []
     repeatList.value = []
-    uncheckedData.forEach((item)=>{
+    uncheckedData.forEach((item) => {
       if (sizeList.includes(item.size + item.pattern)) {
         repeatList.value.push(item.size + item.pattern)
-      } else{
-        sizeList.push(item.size+item.pattern)
+      } else {
+        sizeList.push(item.size + item.pattern)
       }
     })
     successData.value = []
@@ -261,7 +257,7 @@ const handleCheck = () => {
       }
       if (flag) {
         console.log(item)
-        failedData.value.push({ ...item, status: 1})
+        failedData.value.push({ ...item, status: 1 })
       }
     }
   }).catch(err => {
@@ -284,27 +280,27 @@ const handelReset = () => {
 // 判断单价、重量是否相等
 const isEqual = (a, b) => {
   return a.fob === b.fob &&
-   a.ddp === b.ddp &&
-   a.weight === b.weight &&
-   a.pr === b.pr &&
-   a.pcr === b.pcr
+    a.ddp === b.ddp &&
+    a.weight === b.weight &&
+    a.pr === b.pr &&
+    a.pcr === b.pcr
 }
-const getErrData=(a, b)=>{
-  const err = {...a}
+const getErrData = (a, b) => {
+  const err = { ...a }
   if (a.fob !== b.fob) {
-    err.fob = '预报关：'+a.fob+' -- '+'2022价格表：'+b.fob
+    err.fob = '预报关：' + a.fob + ' -- ' + '2022价格表：' + b.fob
   }
   if (a.ddp !== b.ddp) {
-    err.ddp = '预报关：'+a.ddp+' -- '+'2022价格表：'+b.ddp
+    err.ddp = '预报关：' + a.ddp + ' -- ' + '2022价格表：' + b.ddp
   }
   if (a.weight !== b.weight) {
-    err.weight = '预报关：'+a.weight+' -- '+'2022价格表：'+b.weight
+    err.weight = '预报关：' + a.weight + ' -- ' + '2022价格表：' + b.weight
   }
   if (a.pr !== b.pr) {
-    err.pr = '预报关：'+a.pr+' -- '+'2022价格表：'+b.pr
+    err.pr = '预报关：' + a.pr + ' -- ' + '2022价格表：' + b.pr
   }
   if (a.pcr !== b.pcr) {
-    err.pcr = '预报关：'+a.pcr+' -- '+'2022价格表：'+b.pcr
+    err.pcr = '预报关：' + a.pcr + ' -- ' + '2022价格表：' + b.pcr
   }
   return err
 }
@@ -318,3 +314,5 @@ const getErrData=(a, b)=>{
   border-radius: 6px;
 }
 </style>
+
+

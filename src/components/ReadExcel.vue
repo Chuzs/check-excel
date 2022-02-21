@@ -1,153 +1,168 @@
 <template>
-  <div style="width: 800px;">
-  <a-form
-    :model="formState"
-    name="checkForm"
-    v-bind="formItemLayout"
-    layout="horizontal"
-  >
-    <a-form-item name="upload" label="总数据" >
-      <a-upload
-        v-model="formState.totalDataFileList"
-        name="totalDataFile"
-        :multiple="false"
-        :before-upload="beforeTotalDataUpload"
-        style="width: 100%"
-      >
-        <a-button>
-          <UploadOutlined />
-          上传总数据
-        </a-button>
-      </a-upload>
-    </a-form-item>
-    <a-form-item name="upload" label="待核对数据" >
-      <a-upload
-        v-model="formState.uncheckedDataFileList"
-        name="uncheckedDataFile"
-        :multiple="false"
-        :before-upload="beforeUncheckedDataUpload"
-      >
-        <a-button>
-          <UploadOutlined />
-          上传待核对数据
-        </a-button>
-      </a-upload>
-    </a-form-item>
-    <a-form-item :wrapper-col="{ span: 12, offset: 6 }">
-      <a-button
-        type="primary"
-        :loading="uploading"
-        style="margin-top: 16px;"
-        @click="handleUpload"
-      >
-        开始核对
-      </a-button>
-    </a-form-item>
-    <a-form-item label="错误数据" >
-      <a-textarea
-    :value="JSON.stringify(failedData)"
-    :auto-size="{ minRows: 2, maxRows: 50 }"
+  <div style="width: 800px">
+    <a-form
+      :model="formState"
+      name="checkForm"
+      v-bind="formItemLayout"
+      layout="horizontal"
     >
-    </a-textarea>
-    </a-form-item>
-    <a-form-item label="正确数据" >
-     <a-textarea
-      :value="JSON.stringify(successData)"
-      :auto-size="{ minRows: 2, maxRows: 50 }"
-      >
-      </a-textarea>
-    </a-form-item>
-  </a-form>
+      <a-form-item name="upload" label="总数据">
+        <a-upload
+          v-model="formState.totalDataFileList"
+          name="totalDataFile"
+          :multiple="false"
+          :before-upload="beforeTotalDataUpload"
+          style="width: 100%"
+        >
+          <a-button>
+            <UploadOutlined />上传总数据
+          </a-button>
+        </a-upload>
+      </a-form-item>
+      <a-form-item name="upload" label="待核对数据">
+        <a-upload
+          v-model="formState.uncheckedDataFileList"
+          name="uncheckedDataFile"
+          :multiple="false"
+          :before-upload="beforeUncheckedDataUpload"
+        >
+          <a-button>
+            <UploadOutlined />上传待核对数据
+          </a-button>
+        </a-upload>
+      </a-form-item>
+      <a-form-item :wrapper-col="{ span: 12, offset: 6 }">
+        <a-button
+          type="primary"
+          style="margin-top: 16px"
+          @click="handleUpload"
+        >开始核对</a-button>
+      </a-form-item>
+    </a-form>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import XLSX from 'xlsx'
-import { UploadOutlined } from '@ant-design/icons-vue'
-import { BRAND_NAME } from '../share/constant'
+import { ref, reactive } from "vue";
+import { utils, read, writeFile } from "xlsx";
+import { UploadOutlined } from "@ant-design/icons-vue";
+import { BRAND_NAME_GP } from "../share/constant";
 const formItemLayout = {
   labelCol: { span: 4 },
   wrapperCol: { span: 14 },
-}
-const successData = ref([])
-const failedData = ref([])
-const uploading = ref(false)
+};
+const {
+  encode_cell,
+  decode_cell,
+  encode_col,
+  decode_col,
+  encode_range,
+  decode_range,
+  encode_row,
+  decode_row,
+  sheet_to_json,
+} = utils;
 const formState = reactive({
   totalDataFileList: [],
   uncheckedDataFileList: [],
-})
+});
+const invNo = ''
 
-const beforeTotalDataUpload = file => {
-  formState.totalDataFileList = [file]
-  return false
-}
-const beforeUncheckedDataUpload = file => {
-  formState.uncheckedDataFileList = [file]
-  return false
-}
+const beforeTotalDataUpload = (file) => {
+  formState.totalDataFileList = [file];
+  return false;
+};
+const beforeUncheckedDataUpload = (file) => {
+  formState.uncheckedDataFileList = [file];
+  return false;
+};
 
-const parseTotalExcel = async (file) => {
-  const data = await file.arrayBuffer()
-  const workbook = XLSX.read(data)
-  const sheetName = '2022价格'
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: ['number', 'size', 'pattern', 'fob', 'ddp', 'weight'] })
-}
-const parseUncheckedExcel = async (file) => {
-  const fileArrayBuffer = await file.arrayBuffer()
-  const workbook = XLSX.read(fileArrayBuffer)
+const parseToTcExcel = async (file) => {
+  const invNo = file.name.split(' ')[3]
+  console.log(invNo);
+  const fileArrayBuffer = await file.arrayBuffer();
+  const workbook = read(fileArrayBuffer, { cellStyles: true });
+  writeFile(workbook, 'test1.xls', { bookType: 'xlml' })
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+  console.log(ws);
   const firstSheetData = getArrayDataBySheetName(workbook, workbook.SheetNames[0])
-  const secondSheetData = getArrayDataBySheetName(workbook, workbook.SheetNames[1])
-  const result = []
-  if (firstSheetData.length === secondSheetData.length) {
-    for (let i = 0; i < firstSheetData.length; i++) {
-      result.push({
-        size: firstSheetData[i][3].split(' ')[0],
-        pattern: firstSheetData[i][6],
-        fob: firstSheetData[i][8],
-        ddp: firstSheetData[i][9],
-        weight: secondSheetData[i][8],
-      })
-    }
-  } else {
-    console.log('')
+  console.log(firstSheetData);
+  const toTcData = []
+  for (let i = 0; i < firstSheetData.length; i++) {
+    toTcData.push({
+      po: firstSheetData[i][3],
+      spn: firstSheetData[i][4],
+      quantity: firstSheetData[i][11],
+      invNo,
+    })
   }
-  return result
+  console.log(toTcData);
+  return toTcData
 }
 const getArrayDataBySheetName = (workbook, sheetName) => {
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME)
+  return sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(
+    (item) => item[6] === BRAND_NAME_GP,
+  );
+};
+const getWsByIndex = async (file, index) => {
+  const fileArrayBuffer = await file.arrayBuffer();
+  const workbook = read(fileArrayBuffer);
+  const ws = workbook.Sheets[workbook.SheetNames[index]];
+  return ws;
 }
-const handleUpload = async () => {
-  const totalData = await parseTotalExcel(formState.totalDataFileList[0])
-  const uncheckedData = await parseUncheckedExcel(formState.uncheckedDataFileList[0])
-  successData.value = []
-  failedData.value = []
-  for (const item of uncheckedData) {
-    let flag = true
-    for (const elem of totalData) {
-      if (item.size.trim().toUpperCase() === elem.size.trim().toUpperCase() && item.pattern.trim().toUpperCase() === elem.pattern.trim().toUpperCase()) {
-        flag = false
-        if (isEqual(item, elem)) {
-          successData.value.push(item)
-        } else {
-          console.log(elem)
-          console.log(item)
-          failedData.value.push(item)
-        }
+const getColNum = (ws, invNo, po) => {
+  let col = 0
+  const range = decode_range("A1:IV1");
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let invCellAddress = { c: C, r: R };
+      let poCellAddress = { c: C, r: 2 };
+      let invCellRef = encode_cell(invCellAddress);
+      let poCellRef = encode_cell(poCellAddress)
+      if (ws[invCellRef]?.v == invNo && ws[poCellRef]?.v == po) {
+        col = decode_cell(invCellRef).c
       }
     }
-    if (flag) {
-      console.log(item)
-      failedData.value.push(item)
+  }
+  return col
+}
+const getRowNum = (ws, spn) => {
+  let row = 0
+  const range = decode_range("B6:B147");
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let spnCellAdress = { c: C, r: R };
+      let spnCellRef = encode_cell(spnCellAdress);
+      if (ws[spnCellRef]?.v == spn) {
+        row = decode_cell(spnCellRef).r
+      }
     }
   }
+  return row
 }
-const isEqual = (a, b) => {
-  return a.fob === b.fob &&
-   a.ddp === b.ddp &&
-   a.weight === b.weight
+const handleUpload = async () => {
+  const toTcData = await parseToTcExcel(formState.totalDataFileList[0])
+  // const ws = await getWsByIndex(formState.uncheckedDataFileList[0], 0);
+  // const fileArrayBuffer = await formState.uncheckedDataFileList[0].arrayBuffer();
+  // const workbook = read(fileArrayBuffer, { cellStyles: true });
+  // const ws = workbook.Sheets[workbook.SheetNames[0]];
+  // console.log(workbook);
+  // for (const item of toTcData) {
+  //   handleMinus(ws, item)
+  // }
+  // writeFile(workbook, 'test.xls', { bookType: 'xlml' })
+};
+const handleMinus = (ws, totc) => {
+  let unMinusAddress = { c: getColNum(ws, totc.invNo, totc.po), r: getRowNum(ws, totc.spn) }
+  let unMinusCellRef = encode_cell(unMinusAddress);
+  console.log(unMinusCellRef);
+  let orign = ws[unMinusCellRef]?.v
+  ws[unMinusCellRef].w = undefined
+  ws[unMinusCellRef].v -= totc.quantity
+  console.log({ orign, quantity: totc.quantity, final: ws[unMinusCellRef]?.v });
 }
+
+
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

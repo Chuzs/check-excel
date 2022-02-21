@@ -1,8 +1,8 @@
 <template>
-  <ReadPdf />
+  <ReadExcel />
 </template>
 <script setup>
-import ReadPdf from '../components/ReadPdf.vue'
+import ReadExcel from '../components/ReadExcel.vue'
 
 </script>
 <style>
