@@ -538,7 +538,7 @@ const getDraftPageData = async (pdfDocument, page) => {
   const tmp = {};
   const pageInfo = {};
   for (let i = 0; i < strArr.length; i++) {
-    if (strArr[i].indexOf("INV# GRTC") > -1) {
+    if (strArr[i].indexOf("INV# GR") > -1) {
       const arr = strArr[i].trim().split(" ");
       uncheckedOrderInfo.invNo = arr[1];
       uncheckedOrderInfo.invDate = moment(arr[2], "DD-MM-YYYY");
