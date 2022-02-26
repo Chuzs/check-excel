@@ -84,8 +84,9 @@
 import { ref, reactive, toRaw } from 'vue'
 import XLSX from 'xlsx'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { BRAND_NAME_GP } from '../share/constant'
+import { BRAND_NAME_GP, BRAND_NAME_LIST, BRAND_NAME_VR, BRAND_NAME_BY, BRAND_NAME_NA } from '../share/constant'
 import { totalData as totalExcelData } from '../data/totalData.js'
+import { fanmeiData } from '../data/fanmeiData'
 import { Form, message } from 'ant-design-vue'
 
 const useForm = Form.useForm
@@ -139,6 +140,12 @@ const columns = [
     align: 'center',
   },
   {
+    title: 'price',
+    dataIndex: 'price',
+    key: 'price',
+    align: 'center',
+  },
+  {
     title: 'status',
     dataIndex: 'status',
     key: 'status',
@@ -165,9 +172,8 @@ const columns = [
     align: 'center',
   },
 ]
-const successData = ref([])
-const failedData = ref([])
-const repeatList = ref([])
+
+
 const modelRef = reactive({
   totalDataFileList: [],
   uncheckedDataFileList: [],
@@ -201,35 +207,56 @@ const parseUncheckedExcel = async (file) => {
   const workbook = XLSX.read(fileArrayBuffer)
   const firstSheetData = getArrayDataBySheetName(workbook, workbook.SheetNames[0])
   const secondSheetData = getArrayDataBySheetName(workbook, workbook.SheetNames[1])
-  const result = []
-  if (firstSheetData.length === secondSheetData.length) {
-    for (let i = 0; i < firstSheetData.length; i++) {
-      result.push({
-        size: firstSheetData[i][3].split(' ')[0] === secondSheetData[i][3].split(' ')[0] ? secondSheetData[i][3].split(' ')[0] : firstSheetData[i][3].split(' ')[0] + '_' + secondSheetData[i][3].split(' ')[0],
-        pattern: firstSheetData[i][6] === secondSheetData[i][6] ? secondSheetData[i][6] : firstSheetData[i][6] + '_' + secondSheetData[i][6],
-        fob: firstSheetData[i][8],
-        ddp: firstSheetData[i][9],
-        weight: secondSheetData[i][8],
-        pr: firstSheetData[i][5] === secondSheetData[i][5] ? secondSheetData[i][5] : firstSheetData[i][5] + '_' + secondSheetData[i][5],
-        pcr: firstSheetData[i][1] === secondSheetData[i][1] ? secondSheetData[i][1] : firstSheetData[i][1] + '_' + secondSheetData[i][1],
-      })
-    }
-  } else {
-    console.log('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
-    message.warning('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
+  let result = []
+  switch (brandName.value) {
+    case BRAND_NAME_VR:
+      result = getVRData(firstSheetData, secondSheetData)
+      break;
+    default:
+      result = getGPData(firstSheetData, secondSheetData)
+      break;
   }
   return result
 }
+const brandName = ref(BRAND_NAME_GP)
 const getArrayDataBySheetName = (workbook, sheetName) => {
-  return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 }).filter(item => item[2] === BRAND_NAME_GP)
+  const sheetData = XLSX.utils
+    .sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+    .filter(
+      (item) =>
+        BRAND_NAME_LIST.includes(item[2]) || BRAND_NAME_LIST.includes(item[1]),
+    );
+  if (sheetData[0][2] === BRAND_NAME_GP) {
+    brandName.value = BRAND_NAME_GP;
+  }
+  if (sheetData[0][2] === BRAND_NAME_VR) {
+    brandName.value = BRAND_NAME_VR;
+  }
+  if (sheetData[0][1] === BRAND_NAME_NA) {
+    brandName.value = BRAND_NAME_NA;
+  }
+  if (sheetData[0][2] === BRAND_NAME_BY) {
+    brandName.value = BRAND_NAME_BY;
+  }
+  return sheetData;
 }
+const repeatList = ref([])
+const successData = ref([])
+const failedData = ref([])
 const handleCheck = () => {
   validate().then(async () => {
+    const uncheckedData = await parseUncheckedExcel(modelRef.uncheckedDataFileList[0].originFileObj)
+    switch (brandName.value) {
+      case BRAND_NAME_VR:
+        totalData = fanmeiData
+        break;
+      default:
+        break;
+    }
     if (modelRef.totalDataFileList[0]) {
       totalData = await parseTotalExcel(modelRef.totalDataFileList[0].originFileObj)
     }
-    console.log(totalData)
-    const uncheckedData = await parseUncheckedExcel(modelRef.uncheckedDataFileList[0].originFileObj)
+
     const sizeList = []
     repeatList.value = []
     uncheckedData.forEach((item) => {
@@ -241,18 +268,36 @@ const handleCheck = () => {
     })
     successData.value = []
     failedData.value = []
+    console.log(totalData)
+    console.log(uncheckedData);
     for (const item of uncheckedData) {
       let flag = true
       for (const elem of totalData) {
         if (item.size.trim().toUpperCase() === elem.size.trim().toUpperCase() && item.pattern.trim().toUpperCase() === elem.pattern.trim().toUpperCase()) {
           flag = false
-          if (isEqual(item, elem)) {
-            successData.value.push({ ...item, status: 0 })
-          } else {
-            console.log(elem)
-            console.log(item)
-            failedData.value.push({ ...getErrData(item, elem), status: 1 })
+          switch (brandName.value) {
+            case BRAND_NAME_GP:
+              if (isEqual(item, elem)) {
+                successData.value.push({ ...item, status: 0 })
+              } else {
+                console.log(elem)
+                console.log(item)
+                failedData.value.push({ ...getErrData(item, elem), status: 1 })
+              }
+              break;
+            case BRAND_NAME_VR:
+              if (isFanmeiEqual(item, elem)) {
+                successData.value.push({ ...item, status: 0 })
+              } else {
+                console.log(elem)
+                console.log(item)
+                failedData.value.push({ ...getFanmeiErrData(item, elem), status: 1 })
+              }
+              break;
+            default:
+              break;
           }
+
         }
       }
       if (flag) {
@@ -276,11 +321,18 @@ const handelReset = () => {
   resetFields()
   successData.value = []
   failedData.value = []
+  repeatList.value = []
 }
 // 判断单价、重量是否相等
 const isEqual = (a, b) => {
   return a.fob === b.fob &&
     a.ddp === b.ddp &&
+    a.weight === b.weight &&
+    a.pr === b.pr &&
+    a.pcr === b.pcr
+}
+const isFanmeiEqual = (a, b) => {
+  return a.price === b.price &&
     a.weight === b.weight &&
     a.pr === b.pr &&
     a.pcr === b.pcr
@@ -303,6 +355,62 @@ const getErrData = (a, b) => {
     err.pcr = '预报关：' + a.pcr + ' -- ' + '2022价格表：' + b.pcr
   }
   return err
+}
+const getFanmeiErrData = (a, b) => {
+  const err = { ...a }
+  if (a.price !== b.price) {
+    err.price = '预报关：' + a.price + ' -- ' + '价格表：' + b.price
+  }
+  if (a.weight !== b.weight) {
+    err.weight = '预报关：' + a.weight + ' -- ' + '价格表：' + b.weight
+  }
+  if (a.pr !== b.pr) {
+    err.pr = '预报关：' + a.pr + ' -- ' + '价格表：' + b.pr
+  }
+  if (a.pcr !== b.pcr) {
+    err.pcr = '预报关：' + a.pcr + ' -- ' + '价格表：' + b.pcr
+  }
+  return err
+}
+
+function getGPData(firstSheetData, secondSheetData) {
+  const result = []
+  if (firstSheetData.length === secondSheetData.length) {
+    for (let i = 0; i < firstSheetData.length; i++) {
+      result.push({
+        size: firstSheetData[i][3].split(' ')[0] === secondSheetData[i][3].split(' ')[0] ? secondSheetData[i][3].split(' ')[0] : firstSheetData[i][3].split(' ')[0] + '_' + secondSheetData[i][3].split(' ')[0],
+        pattern: firstSheetData[i][6] === secondSheetData[i][6] ? secondSheetData[i][6] : firstSheetData[i][6] + '_' + secondSheetData[i][6],
+        fob: firstSheetData[i][8],
+        ddp: firstSheetData[i][9],
+        weight: secondSheetData[i][8],
+        pr: firstSheetData[i][5] === secondSheetData[i][5] ? secondSheetData[i][5] : firstSheetData[i][5] + '_' + secondSheetData[i][5],
+        pcr: firstSheetData[i][1] === secondSheetData[i][1] ? secondSheetData[i][1] : firstSheetData[i][1] + '_' + secondSheetData[i][1],
+      })
+    }
+  } else {
+    console.log('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
+    message.warning('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
+  }
+  return result
+}
+function getVRData(firstSheetData, secondSheetData) {
+  const result = []
+  if (firstSheetData.length === secondSheetData.length) {
+    for (let i = 0; i < firstSheetData.length; i++) {
+      result.push({
+        size: firstSheetData[i][3] === secondSheetData[i][3] ? secondSheetData[i][3] : firstSheetData[i][3] + '_' + secondSheetData[i][3],
+        pattern: firstSheetData[i][6] === secondSheetData[i][6] ? secondSheetData[i][6] : firstSheetData[i][6] + '_' + secondSheetData[i][6],
+        price: firstSheetData[i][8],
+        weight: secondSheetData[i][8],
+        pr: firstSheetData[i][5] === secondSheetData[i][5] ? secondSheetData[i][5] : firstSheetData[i][5] + '_' + secondSheetData[i][5],
+        pcr: firstSheetData[i][1] === secondSheetData[i][1] ? secondSheetData[i][1] : firstSheetData[i][1] + '_' + secondSheetData[i][1],
+      })
+    }
+  } else {
+    console.log('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
+    message.warning('PACKING LIST 和 COMMERCIAL INVOICE 数量不一致')
+  }
+  return result
 }
 </script>
 
