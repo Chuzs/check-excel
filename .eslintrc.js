@@ -4,21 +4,16 @@ module.exports = {
     browser: true,
     es2021: true,
   },
-  extends: [
-    'plugin:vue/essential',
-    'eslint:recommended',
-  ],
+  extends: ["plugin:vue/essential", "eslint:recommended"],
   parserOptions: {
     ecmaVersion: 11,
-    sourceType: 'module',
+    sourceType: "module",
   },
-  plugins: [
-    'vue',
-  ],
+  plugins: ["vue"],
   rules: {
-    'vue/no-v-model-argument': 'off',
-    'vue/no-v-for-template-key': 'off',
-    'comma-dangle': ['error', 'always-multiline'],
-    'no-unused-vars': 'off',
+    "vue/no-v-model-argument": "off",
+    "vue/no-v-for-template-key": "off",
+    // "comma-dangle": ["warn", "always-multiline"],
+    "no-unused-vars": "off",
   },
-}
+};

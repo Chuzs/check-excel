@@ -16,9 +16,7 @@
               @change="handleTotalChange"
               accept=".xlsx, .xls"
             >
-              <a-button>
-                <UploadOutlined />上传预报关
-              </a-button>
+              <a-button> <UploadOutlined />上传预报关 </a-button>
             </a-upload>
           </a-form-item>
           <a-form-item
@@ -34,15 +32,15 @@
               @change="handleUncheckedChange"
               accept=".pdf"
             >
-              <a-button>
-                <UploadOutlined />上传待核对数据
-              </a-button>
+              <a-button> <UploadOutlined />上传待核对数据 </a-button>
             </a-upload>
           </a-form-item>
           <a-form-item>
             <a-space>
               <a-button type="primary" @click="handleCheck">开始核对</a-button>
-              <a-button type="primary" ghost @click="handelReset">重置</a-button>
+              <a-button type="primary" ghost @click="handelReset"
+                >重置</a-button
+              >
             </a-space>
           </a-form-item>
         </a-row>
@@ -70,9 +68,7 @@
               <template v-if="column.key === 'status'">
                 <span>
                   <a-tag :color="record.status === 1 ? 'volcano' : 'green'">
-                    {{
-                      record.status === 1 ? "错误" : "正确"
-                    }}
+                    {{ record.status === 1 ? "错误" : "正确" }}
                   </a-tag>
                 </span>
               </template>
@@ -99,9 +95,7 @@
               <template v-if="column.key === 'status'">
                 <span>
                   <a-tag :color="record.status === 1 ? 'volcano' : 'green'">
-                    {{
-                      record.status === 1 ? "错误" : "正确"
-                    }}
+                    {{ record.status === 1 ? "错误" : "正确" }}
                   </a-tag>
                 </span>
               </template>
@@ -131,9 +125,7 @@
                       : 'black',
                   }"
                 >
-                  {{
-                    record.invDate && record.invDate.format("YYYY-MM-DD")
-                  }}
+                  {{ record.invDate && record.invDate.format("YYYY-MM-DD") }}
                 </span>
               </template>
               <template v-if="column.key === 'vesselDate'">
@@ -162,7 +154,8 @@
                       ? 'red'
                       : 'black',
                   }"
-                >{{ text }}</span>
+                  >{{ text }}</span
+                >
               </template>
             </template>
           </a-table>
@@ -453,7 +446,7 @@ const getSuzuyoPageData = async (pdfDocument, page) => {
       uncheckedOrderInfo.vessel = strArr[i + 2].trim();
       uncheckedOrderInfo.vesselDate = moment(
         strArr[i + 3],
-        "DD-MM-YYYY",
+        "DD-MM-YYYY"
       ).subtract(543, "years");
       uncheckedOrderInfo.country =
         strArr[i + 9].split(" ")[1] +
@@ -476,23 +469,27 @@ const getSuzuyoPageData = async (pdfDocument, page) => {
         strArr[i + 3];
     }
     if (strArr[i].trim() === "MADE IN THAILAND") {
-      tmp.quantity = parseInt(strArr[i + 1]);
+      tmp.quantity = parseInt(strArr[i + 1].replace(",", ""));
     }
     if (strArr[i].trim() === "PASSENGER CAR RADIAL") {
       tmp.pcr = strArr[i + 1];
       tmp.weight = parseFloat(strArr[i + 3].split(" ")[0].replace(",", ""));
       tmp.quantity =
-        tmp.quantity === parseInt(strArr[i + 4].split(" ")[0])
+        tmp.quantity === parseInt(strArr[i + 4].split(" ")[0].replace(",", ""))
           ? tmp.quantity
-          : tmp.quantity + "_" + parseInt(strArr[i + 4].split(" ")[0]);
+          : tmp.quantity +
+            "_" +
+            parseInt(strArr[i + 4].split(" ")[0].replace(",", ""));
     }
     if (strArr[i].trim() === "TRUCK BUS RADIAL TYRE") {
       tmp.pcr = strArr[i + 1];
       tmp.weight = parseFloat(strArr[i + 3].split(" ")[0].replace(",", ""));
       tmp.quantity =
-        tmp.quantity === parseInt(strArr[i + 4].split(" ")[0])
+        tmp.quantity === parseInt(strArr[i + 4].split(" ")[0].replace(",", ""))
           ? tmp.quantity
-          : tmp.quantity + "_" + parseInt(strArr[i + 4].split(" ")[0]);
+          : tmp.quantity +
+            "_" +
+            parseInt(strArr[i + 4].split(" ")[0].replace(",", ""));
     }
     if (strArr[i].trim() === "FREE") {
       tmp.fob = parseFloat(strArr[i - 2].split(" ")[1].replace(",", ""));
@@ -500,25 +497,25 @@ const getSuzuyoPageData = async (pdfDocument, page) => {
     }
     if (strArr[i].indexOf("Total G.W.") > -1) {
       pageInfo.totalNw = parseFloat(
-        strArr[i + 3].split(" ")[0].replace(",", ""),
+        strArr[i + 3].split(" ")[0].replace(",", "")
       );
       if (numList.length === pdfDocument._pdfInfo.numPages - 1) {
         pageInfo.totalFob = parseFloat(
-          strArr[i - 4].split(" ")[1].replace(",", ""),
+          strArr[i - 4].split(" ")[1].replace(",", "")
         );
       } else {
         pageInfo.totalFob = parseFloat(
-          strArr[i - 3].split(" ")[1].replace(",", ""),
+          strArr[i - 3].split(" ")[1].replace(",", "")
         );
       }
       pageInfo.totalQty =
         parseInt(strArr[i + 5].split(" ")[0].replace(",", "")) ===
-          parseInt(strArr[i + 7].split(" ")[0].replace(",", ""))
+        parseInt(strArr[i + 7].split(" ")[0].replace(",", ""))
           ? parseInt(strArr[i + 5].split(" ")[0].replace(",", ""))
           : parseInt(strArr[i + 5].split(" ")[0].replace(",", "")) +
-          parseInt(strArr[i + 7].split(" ")[0].replace(",", ""));
+            parseInt(strArr[i + 7].split(" ")[0].replace(",", ""));
       pageInfo.totalGw = parseFloat(
-        strArr[i + 2].split(" ")[0].replace(",", ""),
+        strArr[i + 2].split(" ")[0].replace(",", "")
       );
     }
   }
@@ -545,14 +542,14 @@ const getDraftPageData = async (pdfDocument, page) => {
       uncheckedOrderInfo.vessel = strArr[i + 2] + " " + strArr[i + 3];
       uncheckedOrderInfo.vesselDate = moment(
         strArr[i + 4],
-        "DD-MM-YYYY",
+        "DD-MM-YYYY"
       ).subtract(543, "years");
     }
     if (strArr[i].indexOf("ทางเรือ") > -1) {
       uncheckedOrderInfo.vessel = strArr[i - 3] + " " + strArr[i - 2];
       uncheckedOrderInfo.vesselDate = moment(
         strArr[i - 1],
-        "DD-MM-YYYY",
+        "DD-MM-YYYY"
       ).subtract(543, "years");
     }
     if (strArr[i].indexOf("1.00 USD =") > -1 && page === 1) {
@@ -564,44 +561,48 @@ const getDraftPageData = async (pdfDocument, page) => {
     if (page === 1 && strArr[i].trim() === "PASSENGER CAR RADIAL") {
       tmp.pcr = strArr[i + 1];
       tmp.weight = parseFloat(strArr[i - 1].split(" ")[0].replace(",", ""));
-      tmp.quantity = parseInt(strArr[i - 3].split(" ")[0]);
+      tmp.quantity = parseInt(strArr[i - 3].split(" ")[0].replace(",", ""));
       tmp.quantity =
-        tmp.quantity === parseInt(strArr[i - 2].split(" ")[0])
+        tmp.quantity === parseInt(strArr[i - 2].split(" ")[0].replace(",", ""))
           ? tmp.quantity
-          : tmp.quantity + "_" + parseInt(strArr[i - 2].split(" ")[0]);
+          : tmp.quantity +
+            "_" +
+            parseInt(strArr[i - 2].split(" ")[0].replace(",", ""));
       tmp.fob = parseFloat(strArr[i - 7].split(" ")[1].replace(",", ""));
       uncheckedData.push({ ...tmp });
     } else if (strArr[i].trim() === "PASSENGER CAR RADIAL") {
       tmp.pcr = strArr[i + 1];
       tmp.weight = parseFloat(strArr[i + 6].split(" ")[0].replace(",", ""));
-      tmp.quantity = parseInt(strArr[i - 1].split(" ")[0]);
+      tmp.quantity = parseInt(strArr[i - 1].split(" ")[0].replace(",", ""));
       tmp.quantity =
-        tmp.quantity === parseInt(strArr[i + 11].split(" ")[0])
+        tmp.quantity === parseInt(strArr[i + 11].split(" ")[0].replace(",", ""))
           ? tmp.quantity
-          : tmp.quantity + "_" + parseInt(strArr[i + 11].split(" ")[0]);
+          : tmp.quantity +
+            "_" +
+            parseInt(strArr[i + 11].split(" ")[0].replace(",", ""));
       tmp.fob = parseFloat(strArr[i + 5].split(" ")[1].replace(",", ""));
       uncheckedData.push({ ...tmp });
     }
     if (page === 1 && strArr[i].indexOf("NW =") > -1) {
       pageInfo.totalNw = parseFloat(strArr[i].split(" ")[2].replace(",", ""));
       pageInfo.totalFob = parseFloat(
-        strArr[i - 1].split(" ")[1].replace(",", ""),
+        strArr[i - 1].split(" ")[1].replace(",", "")
       );
       pageInfo.totalQty = parseInt(
-        strArr[i + 1].split(" ")[2].replace(",", ""),
+        strArr[i + 1].split(" ")[2].replace(",", "")
       );
       pageInfo.totalGw = parseFloat(
-        strArr[i + 2].split(" ")[2].replace(",", ""),
+        strArr[i + 2].split(" ")[2].replace(",", "")
       );
     } else if (strArr[i].indexOf("GW =") > -1) {
       pageInfo.totalQty = parseInt(
-        strArr[i - 1].split(" ")[2].replace(",", ""),
+        strArr[i - 1].split(" ")[2].replace(",", "")
       );
       pageInfo.totalGw = parseFloat(strArr[i].split(" ")[2].replace(",", ""));
     } else if (strArr[i].indexOf("NW =") > -1) {
       pageInfo.totalNw = parseFloat(strArr[i].split(" ")[2].replace(",", ""));
       pageInfo.totalFob = parseFloat(
-        strArr[i - 2].split(" ")[1].replace(",", ""),
+        strArr[i - 2].split(" ")[1].replace(",", "")
       );
     }
   }
@@ -630,7 +631,7 @@ const getYifanPageData = async (pdfDocument, page) => {
       uncheckedOrderInfo.vessel = strArr[i + 4];
       uncheckedOrderInfo.vesselDate = moment(
         strArr[i + 5],
-        "DD-MM-YYYY",
+        "DD-MM-YYYY"
       ).subtract(543, "years");
       uncheckedOrderInfo.country =
         strArr[i + 13].replace(" ", "") + strArr[i + 11];
@@ -657,17 +658,17 @@ const getYifanPageData = async (pdfDocument, page) => {
     }
     if (strArr[i].indexOf("Total G.W.") > -1) {
       pageInfo.totalNw = parseFloat(
-        strArr[i - 1].split(" ")[2].replace(",", ""),
+        strArr[i - 1].split(" ")[2].replace(",", "")
       );
       pageInfo.totalFob = parseFloat(
-        strArr[i + 3].split(" ")[1].replace(",", ""),
+        strArr[i + 3].split(" ")[1].replace(",", "")
       );
       pageInfo.totalQty =
         parseInt(strArr[i + 1].split(" ")[0].replace(",", "")) ===
-          parseInt(strArr[i + 2].split(" ")[2].replace(",", ""))
+        parseInt(strArr[i + 2].split(" ")[2].replace(",", ""))
           ? parseInt(strArr[i + 1].split(" ")[0].replace(",", ""))
           : parseInt(strArr[i + 1].split(" ")[0].replace(",", "")) +
-          parseInt(strArr[i + 2].split(" ")[2].replace(",", ""));
+            parseInt(strArr[i + 2].split(" ")[2].replace(",", ""));
       pageInfo.totalGw = parseFloat(strArr[i].split(" ")[2].replace(",", ""));
     }
   }
@@ -682,17 +683,17 @@ const parseTotalExcel = async (file) => {
   const workbook = XLSX.read(fileArrayBuffer);
   const firstSheetData = getArrayDataBySheetName(
     workbook,
-    workbook.SheetNames[0],
+    workbook.SheetNames[0]
   );
   console.log(firstSheetData);
   const secondSheetData = getArrayDataBySheetName(
     workbook,
-    workbook.SheetNames[1],
+    workbook.SheetNames[1]
   );
   console.log(secondSheetData);
   const secondSheetOtherData = getOtherDataBySheetName(
     workbook,
-    workbook.SheetNames[1],
+    workbook.SheetNames[1]
   );
   console.log(secondSheetOtherData);
   parseTotalOrderInfo(secondSheetOtherData);
@@ -761,7 +762,7 @@ const parseTotalOrderInfo = (secondSheetOtherData) => {
     ]
       .split(":")[1]
       .trim(),
-    "MMM D YYYY",
+    "MMM D YYYY"
   );
   totalOrderInfo.vessel = secondSheetOtherData[vesselIndex][
     secondSheetOtherData[vesselIndex].length - 1
@@ -774,7 +775,7 @@ const parseTotalOrderInfo = (secondSheetOtherData) => {
     ]
       .split(":")[1]
       .trim(),
-    "MMM D YYYY",
+    "MMM D YYYY"
   );
   totalOrderInfo.country = "UNITEDSTATESUS";
   totalOrderInfo.destination = "UNITEDSTATESUS";
@@ -805,7 +806,7 @@ const parseTotalData = (firstSheetData, secondSheetData) => {
     totalData.push({
       fob: parseFloat(parseFloat(firstSheetData[i][fobIndex]).toFixed(2)),
       weight: parseFloat(
-        parseFloat(secondSheetData[i][weightIndex]).toFixed(2),
+        parseFloat(secondSheetData[i][weightIndex]).toFixed(2)
       ),
       pcr:
         firstSheetData[i][pcrIndex] === secondSheetData[i][pcrIndex]
@@ -815,7 +816,7 @@ const parseTotalData = (firstSheetData, secondSheetData) => {
         firstSheetData[i][quantutyIndex] === secondSheetData[i][quantutyIndex]
           ? secondSheetData[i][quantutyIndex]
           : firstSheetData[i][quantutyIndex] +
-          secondSheetData[i][quantutyIndex],
+            secondSheetData[i][quantutyIndex],
     });
   }
 };
@@ -825,7 +826,7 @@ const getArrayDataBySheetName = (workbook, sheetName) => {
     .sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
     .filter(
       (item) =>
-        BRAND_NAME_LIST.includes(item[2]) || BRAND_NAME_LIST.includes(item[1]),
+        BRAND_NAME_LIST.includes(item[2]) || BRAND_NAME_LIST.includes(item[1])
     );
   if (sheetData[0][2] === BRAND_NAME_GP) {
     brandName.value = BRAND_NAME_GP;
@@ -848,7 +849,7 @@ const getOtherDataBySheetName = (workbook, sheetName) => {
       (item) =>
         !(
           BRAND_NAME_LIST.includes(item[2]) || BRAND_NAME_LIST.includes(item[1])
-        ),
+        )
     )
     .filter((item) => item.length > 0);
 };
