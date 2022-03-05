@@ -45,7 +45,28 @@
     <div class="container" style="margin-top: 20px">
       <a-collapse v-model:activeKey="activeKey">
         <a-collapse-panel key="1" header="发票信息">
-          <p v-for="item in invData" :key="item">{{ item }}</p>
+          <a-row type="flex" justify="space-around">
+            <a-col>
+              <h1>PACKING LIST</h1>
+              <p
+                v-for="item in packingInvData"
+                :key="item"
+                :style="{ color: item.color }"
+              >
+                {{ item.text }}
+              </p>
+            </a-col>
+            <a-col>
+              <h1>COMMERCIAL INVOICE ORIGINAL</h1>
+              <p
+                v-for="item in commercialInvData"
+                :key="item"
+                :style="{ color: item.color }"
+              >
+                {{ item.text }}
+              </p>
+            </a-col>
+          </a-row>
         </a-collapse-panel>
         <a-collapse-panel
           key="2"
@@ -55,9 +76,12 @@
             '，正确条数：' +
             successData.length +
             '，错误条数：' +
-            failedData.length
+            failedData.length +
+            '，重复条数：' +
+            repeatList.length * 2
           "
         >
+          <p>英文大写：{{ isUppercase.text }}</p>
           <a-table
             rowKey="size"
             :columns="columns"
@@ -248,11 +272,18 @@ const parseUncheckedExcel = async (file) => {
     workbook,
     workbook.SheetNames[1]
   );
+  const firstSheetOtherData = getOtherDataBySheetName(
+    workbook,
+    workbook.SheetNames[0]
+  );
+  console.log(firstSheetOtherData);
+  parsecommercialInvoice(firstSheetOtherData);
   const secondSheetOtherData = getOtherDataBySheetName(
     workbook,
     workbook.SheetNames[1]
   );
   parseInvoice(secondSheetOtherData);
+  compareInvData(packingInvData, commercialInvData);
   let result = [];
   switch (brandName.value) {
     case BRAND_NAME_VR:
@@ -297,7 +328,7 @@ const getOtherDataBySheetName = (workbook, sheetName) => {
     )
     .filter((item) => item.length > 0);
 };
-const invData = reactive([]);
+const packingInvData = reactive([]);
 const parseInvoice = (secondSheetOtherData) => {
   let invNoIndex = 4;
   let invDateIndex = 5;
@@ -315,21 +346,74 @@ const parseInvoice = (secondSheetOtherData) => {
     default:
       break;
   }
-  invData.push(
-    secondSheetOtherData[invNoIndex][
+  packingInvData.push({
+    text: secondSheetOtherData[invNoIndex][
       secondSheetOtherData[invNoIndex].length - 1
-    ]
-  );
-  invData.push(
-    secondSheetOtherData[invDateIndex][
+    ],
+  });
+  packingInvData.push({
+    text: secondSheetOtherData[invDateIndex][
       secondSheetOtherData[invDateIndex].length - 1
-    ]
-  );
-  invData.push(
-    secondSheetOtherData[contractNoIndex][
+    ],
+  });
+  packingInvData.push({
+    text: secondSheetOtherData[contractNoIndex][
       secondSheetOtherData[contractNoIndex].length - 1
-    ]
-  );
+    ],
+  });
+};
+const commercialInvData = reactive([]);
+let isUppercase = reactive({ value: "正确", text: "" });
+const parsecommercialInvoice = (otherData) => {
+  let invNoIndex = 4;
+  let invDateIndex = 5;
+  let contractNoIndex = 6;
+  let totalAmountIndex = 15;
+  switch (brandName.value) {
+    case BRAND_NAME_NA:
+    case BRAND_NAME_BY:
+    case BRAND_NAME_VR:
+      // invNoIndex = 3;
+      // invDateIndex = 4;
+      // contractNoIndex = 5;
+      break;
+    case BRAND_NAME_GP:
+      break;
+    default:
+      break;
+  }
+  commercialInvData.push({
+    text: otherData[invNoIndex][otherData[invNoIndex].length - 1],
+  });
+  commercialInvData.push({
+    text: otherData[invDateIndex][otherData[invDateIndex].length - 1],
+  });
+  commercialInvData.push({
+    text: otherData[contractNoIndex][otherData[contractNoIndex].length - 1],
+  });
+  const totalAmount =
+    otherData[totalAmountIndex][otherData[totalAmountIndex].length - 1];
+  // if (totalAmount != totalAmount.toUpperCase()) {
+  //   isUppercase.value = "错误";
+  // } else {
+  //   isUppercase.value = "正确";
+  // }
+  isUppercase.text = totalAmount;
+};
+const compareInvData = (a, b) => {
+  for (let i = 0; i < a.length; i++) {
+    if (i == 1) {
+      if (a[i].text.toUpperCase() != b[i].text.toUpperCase()) {
+        a[i].color = "red";
+        b[i].color = "red";
+      }
+    } else {
+      if (a[i].text != b[i].text) {
+        a[i].color = "red";
+        b[i].color = "red";
+      }
+    }
+  }
 };
 const repeatList = ref([]);
 const successData = ref([]);
@@ -428,7 +512,9 @@ const handelReset = () => {
   successData.value = [];
   failedData.value = [];
   repeatList.value = [];
-  invData.length = 0;
+  isUppercase = { value: "正确", text: "" };
+  packingInvData.length = 0;
+  commercialInvData.length = 0;
 };
 // 判断单价、重量是否相等
 const isEqual = (a, b) => {
